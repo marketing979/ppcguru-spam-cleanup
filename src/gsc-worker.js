@@ -50,7 +50,16 @@ async function submitOne(page, request) {
 
 async function run() {
   const store = createStore(root);
-  const queue = store.read().requests.filter((r) => r.approved && !["submitted", "processing"].includes(r.status)).slice(0, limit);
+  const dashboard = process.env.DASHBOARD_URL?.replace(/\/$/, "");
+  const token = process.env.WORKER_TOKEN;
+  const remote = Boolean(dashboard && token);
+  const headers = remote ? { authorization: `Bearer ${token}`, "content-type": "application/json" } : {};
+  const queue = remote
+    ? (await (await fetch(`${dashboard}/api/worker/next`, { headers })).json()).requests.slice(0, limit)
+    : store.read().requests.filter((r) => r.approved && !["submitted", "processing"].includes(r.status)).slice(0, limit);
+  const update = async (id, patch) => remote
+    ? fetch(`${dashboard}/api/worker/requests/${id}/status`, { method: "POST", headers, body: JSON.stringify(patch) })
+    : store.update(id, patch);
   if (!execute) {
     console.log(JSON.stringify({ mode: "dry-run", eligible: queue.length, requests: queue.map(({ id, type, value }) => ({ id, type, value })) }, null, 2));
     return;
@@ -60,14 +69,14 @@ async function run() {
   const context = await launchGscBrowser(root, false);
   const page = context.pages()[0] || await context.newPage();
   for (const request of queue) {
-    store.update(request.id, { status: "processing" });
+    await update(request.id, { status: "processing" });
     try {
       await submitOne(page, request);
-      store.update(request.id, { status: "submitted", submittedAt: new Date().toISOString() });
+      await update(request.id, { status: "submitted" });
     } catch (error) {
       const shot = path.join(root, "data", `failure-${request.id}.png`);
       await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
-      store.update(request.id, { status: "failed", error: error.message, screenshot: shot });
+      await update(request.id, { status: "failed", error: error.message });
       break;
     }
   }

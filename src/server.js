@@ -12,6 +12,11 @@ const publicDir = path.join(root, "public");
 const port = Number(process.env.PORT || 4310);
 const store = createStore(root);
 let connectionProcess = null;
+const workerToken = process.env.WORKER_TOKEN || "";
+
+function workerAuthorized(req) {
+  return Boolean(workerToken) && req.headers.authorization === `Bearer ${workerToken}`;
+}
 
 function send(res, status, body, type = "application/json; charset=utf-8") {
   res.writeHead(status, { "content-type": type, "x-content-type-options": "nosniff" });
@@ -43,6 +48,18 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, toCsv(input.items || []), "text/csv; charset=utf-8");
     }
     if (req.method === "GET" && req.url === "/api/registry") return send(res, 200, JSON.stringify(store.read()));
+    if (req.url.startsWith("/api/worker/") && !workerAuthorized(req)) return send(res, 401, JSON.stringify({ error: "Unauthorized worker" }));
+    if (req.method === "GET" && req.url === "/api/worker/next") {
+      const requests = store.read().requests.filter((r) => r.approved && !["submitted", "processing"].includes(r.status));
+      return send(res, 200, JSON.stringify({ requests }));
+    }
+    if (req.method === "POST" && /^\/api\/worker\/requests\/[^/]+\/status$/.test(req.url)) {
+      const id = req.url.split("/")[4];
+      const input = await body(req);
+      const allowed = ["processing", "submitted", "failed"];
+      if (!allowed.includes(input.status)) return send(res, 400, JSON.stringify({ error: "Invalid status" }));
+      return send(res, 200, JSON.stringify(store.update(id, { status: input.status, error: input.error || "", submittedAt: input.status === "submitted" ? new Date().toISOString() : undefined })));
+    }
     if (req.method === "GET" && req.url === "/api/gsc/status") {
       const file = path.join(root, "data", "gsc-connection.json");
       const status = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { status: "not-connected", message: "Connect the dedicated Google account." };
