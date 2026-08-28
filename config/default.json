@@ -1,0 +1,19 @@
+{
+  "siteOrigin": "https://ppcguru.ca",
+  "minimumAutoScore": 80,
+  "minimumPrefixSize": 3,
+  "requestTimeoutMs": 10000,
+  "suspiciousTerms": [
+    "casino", "casinos", "slot", "slots", "gambling", "poker", "jackpot",
+    "sportsbook", "betting", "bonus", "roulette", "blackjack", "baccarat"
+  ],
+  "knownSpamPathPatterns": [
+    "(?:^|[-_/])casino(?:$|[-_/])",
+    "(?:^|[-_/])slots?(?:$|[-_/])",
+    "(?:^|[-_/])gambling(?:$|[-_/])",
+    "(?:^|[-_/])sportsbook(?:$|[-_/])"
+  ],
+  "protectedPrefixes": [
+    "/", "/services", "/blog", "/contact", "/about", "/privacy", "/terms"
+  ]
+}

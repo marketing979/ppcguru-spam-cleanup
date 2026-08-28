@@ -1,0 +1,23 @@
+{
+  "name": "ppcguru-spam-cleanup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Safe URL triage and prefix-planning MVP for hacked-site cleanup.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "analyze": "node src/cli.js analyze",
+    "queue:import": "node src/queue.js import",
+    "gsc:login": "node src/gsc-connect.js",
+    "gsc:dry-run": "node src/gsc-worker.js run",
+    "gsc:execute": "node src/gsc-worker.js run --execute",
+    "rules": "node src/rules.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright-core": "^1.55.0"
+  }
+}

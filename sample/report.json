@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-08-28T12:42:08.054Z",
+  "siteOrigin": "https://ppcguru.ca",
+  "summary": {
+    "total": 5,
+    "manual-review": 3,
+    "protected": 1,
+    "invalid": 1
+  },
+  "prefixes": {
+    "suggestions": [],
+    "exactUrls": []
+  },
+  "items": [
+    {
+      "valid": true,
+      "input": "https://ppcguru.ca/casino-spam-001/",
+      "url": "https://ppcguru.ca/casino-spam-001/",
+      "path": "/casino-spam-001/",
+      "query": "",
+      "score": 80,
+      "decision": "manual-review",
+      "reasons": [
+        "suspicious term: casino",
+        "known spam path pattern",
+        "not in legitimate URL list"
+      ]
+    },
+    {
+      "valid": true,
+      "input": "https://ppcguru.ca/casino-spam-002/",
+      "url": "https://ppcguru.ca/casino-spam-002/",
+      "path": "/casino-spam-002/",
+      "query": "",
+      "score": 80,
+      "decision": "manual-review",
+      "reasons": [
+        "suspicious term: casino",
+        "known spam path pattern",
+        "not in legitimate URL list"
+      ]
+    },
+    {
+      "valid": true,
+      "input": "https://ppcguru.ca/casino-spam-003/",
+      "url": "https://ppcguru.ca/casino-spam-003/",
+      "path": "/casino-spam-003/",
+      "query": "",
+      "score": 80,
+      "decision": "manual-review",
+      "reasons": [
+        "suspicious term: casino",
+        "known spam path pattern",
+        "not in legitimate URL list"
+      ]
+    },
+    {
+      "valid": true,
+      "input": "https://ppcguru.ca/blog/google-ads-for-gambling-businesses/",
+      "url": "https://ppcguru.ca/blog/google-ads-for-gambling-businesses/",
+      "path": "/blog/google-ads-for-gambling-businesses/",
+      "query": "",
+      "score": 0,
+      "decision": "protected",
+      "reasons": [
+        "protected prefix: /blog"
+      ]
+    },
+    {
+      "valid": false,
+      "input": "https://other-site.example/casino/",
+      "reason": "outside-site",
+      "score": 0,
+      "decision": "invalid",
+      "reasons": [
+        "outside-site"
+      ]
+    }
+  ]
+}

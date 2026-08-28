@@ -1,0 +1,6 @@
+url,path,score,decision,reasons
+"https://ppcguru.ca/casino-spam-001/","/casino-spam-001/","80","manual-review","suspicious term: casino; known spam path pattern; not in legitimate URL list"
+"https://ppcguru.ca/casino-spam-002/","/casino-spam-002/","80","manual-review","suspicious term: casino; known spam path pattern; not in legitimate URL list"
+"https://ppcguru.ca/casino-spam-003/","/casino-spam-003/","80","manual-review","suspicious term: casino; known spam path pattern; not in legitimate URL list"
+"https://ppcguru.ca/blog/google-ads-for-gambling-businesses/","/blog/google-ads-for-gambling-businesses/","0","protected","protected prefix: /blog"
+"https://other-site.example/casino/","","0","invalid","outside-site"
