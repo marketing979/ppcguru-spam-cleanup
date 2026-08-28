@@ -88,7 +88,21 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, JSON.stringify(status));
     }
     if (req.method === "POST" && req.url === "/api/gsc/connect") {
-      if (hostedMode) return send(res, 409, JSON.stringify({ error: "GSC runs on the Windows worker. Start connect-gsc.ps1 on that computer." }));
+      if (hostedMode) {
+        const status = fs.existsSync(workerStatusFile) ? JSON.parse(fs.readFileSync(workerStatusFile, "utf8")) : null;
+        const age = status?.checkedAt ? Date.now() - Date.parse(status.checkedAt) : Infinity;
+        if (status?.status === "connected" && age <= 120_000) {
+          return send(res, 200, JSON.stringify({ ...status, message: "Connection verified through the Windows browser bridge." }));
+        }
+        return send(res, 409, JSON.stringify({ error: "Windows GSC bridge is offline. Start browser-bridge.ps1 on the connected computer." }));
+      }
+      const localStatusFile = path.join(root, "data", "gsc-connection.json");
+      if (fs.existsSync(localStatusFile)) {
+        const localStatus = JSON.parse(fs.readFileSync(localStatusFile, "utf8"));
+        if (localStatus.status === "connected" && /browser bridge/i.test(localStatus.message || "")) {
+          return send(res, 200, JSON.stringify({ ...localStatus, message: "Connection verified through the local browser bridge." }));
+        }
+      }
       if (!connectionProcess || connectionProcess.exitCode !== null) {
         connectionProcess = spawn(process.execPath, [path.join(root, "src", "gsc-connect.js")], { cwd: root, detached: true, stdio: "ignore", windowsHide: true });
         connectionProcess.unref();

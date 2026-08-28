@@ -91,13 +91,23 @@ async function decide(id, action) { await fetch(`/api/requests/${id}/${action}`,
 loadRegistry();
 
 $("connect-gsc").addEventListener("click", async () => {
-  $("connect-gsc").disabled = true;
-  const response = await fetch("/api/gsc/connect", { method: "POST" });
-  if (!response.ok) {
+  const button = $("connect-gsc");
+  button.disabled = true;
+  button.textContent = "Verifying…";
+  try {
+    const response = await fetch("/api/gsc/connect", { method: "POST" });
     const result = await response.json().catch(() => ({}));
-    $("gsc-message").textContent = result.error || "Could not start the GSC worker.";
+    if (!response.ok) throw new Error(result.error || "Could not connect the GSC worker.");
+    button.textContent = result.status === "connected" ? "Connection verified ✓" : "Browser opened ✓";
+    $("gsc-message").textContent = result.message || "GSC connection started.";
+    setTimeout(refreshGsc, 1200);
+  } catch (error) {
+    button.textContent = "Reconnect failed";
+    $("gsc-message").textContent = error.message;
+  } finally {
+    button.disabled = false;
+    resetButton(button, "Reconnect");
   }
-  await refreshGsc();
 });
 async function refreshGsc() {
   try {
