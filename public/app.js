@@ -42,17 +42,51 @@ $("export").addEventListener("click", async () => {
 function esc(value) { const div = document.createElement("div"); div.textContent = value; return div.innerHTML; }
 
 $("queue").addEventListener("click", async () => {
-  if (!report) return;
-  await fetch("/api/queue/import", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(report) });
-  await loadRegistry();
+  const button = $("queue");
+  if (!report) { button.textContent = "Analyze URLs first"; return resetButton(button, "Add ready items to queue"); }
+  const readyCount = (report.prefixes?.exactUrls?.length || 0) + (report.prefixes?.suggestions?.length || 0);
+  if (!readyCount) { button.textContent = "No ready items"; return resetButton(button, "Add ready items to queue"); }
+  button.disabled = true;
+  button.textContent = "Adding…";
+  try {
+    const before = await getRegistry();
+    const response = await fetch("/api/queue/import", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(report) });
+    if (!response.ok) throw new Error((await response.json()).error || "Queue import failed");
+    const after = await response.json();
+    renderRegistry(after);
+    const added = after.requests.length - before.requests.length;
+    button.textContent = added ? `${added} item${added === 1 ? "" : "s"} added ✓` : "Already in queue ✓";
+  } catch (error) {
+    button.textContent = "Add failed";
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+    resetButton(button, "Add ready items to queue");
+  }
 });
-$("refresh").addEventListener("click", loadRegistry);
+$("refresh").addEventListener("click", async () => {
+  const button = $("refresh");
+  button.disabled = true;
+  button.textContent = "Refreshing…";
+  try { await loadRegistry(); button.textContent = "Refreshed ✓"; }
+  catch (error) { button.textContent = "Refresh failed"; alert(error.message); }
+  finally { button.disabled = false; resetButton(button, "Refresh"); }
+});
+async function getRegistry() {
+  const response = await fetch("/api/registry", { cache: "no-store" });
+  if (!response.ok) throw new Error("Could not load queue");
+  return response.json();
+}
 async function loadRegistry() {
-  const data = await (await fetch("/api/registry")).json();
+  const data = await getRegistry();
+  renderRegistry(data);
+}
+function renderRegistry(data) {
   $("registry").innerHTML = data.requests.map((r) => `<tr><td>${esc(r.value)}</td><td>${r.type}</td><td>${r.status}</td><td>${r.status === "pending-review" ? `<button data-approve="${r.id}">Approve</button> <button class="secondary" data-reject="${r.id}">Reject</button>` : "—"}</td></tr>`).join("") || `<tr><td colspan="4" class="note">No requests queued.</td></tr>`;
   document.querySelectorAll("[data-approve]").forEach((b) => b.onclick = () => decide(b.dataset.approve, "approve"));
   document.querySelectorAll("[data-reject]").forEach((b) => b.onclick = () => decide(b.dataset.reject, "reject"));
 }
+function resetButton(button, label) { setTimeout(() => { button.textContent = label; }, 1800); }
 async function decide(id, action) { await fetch(`/api/requests/${id}/${action}`, { method: "POST" }); await loadRegistry(); }
 loadRegistry();
 
