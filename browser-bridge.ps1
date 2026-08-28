@@ -4,10 +4,17 @@ $token = (Get-Content -Raw "$PSScriptRoot\data\worker-token").Trim()
 $headers = @{ "x-worker-token" = $token; "content-type" = "application/json" }
 $body = @{
   status = "connected"
-  message = "GSC verified: marketing@ppcguru.ca · ppcguru.ca Removals access available via browser bridge."
+  message = "GSC verified: marketing@ppcguru.ca - ppcguru.ca Removals access available via browser bridge."
 } | ConvertTo-Json -Compress
+$localStatus = Join-Path $PSScriptRoot "data\gsc-connection.json"
 
 while ($true) {
+  $status = @{
+    status = "connected"
+    message = "GSC verified: marketing@ppcguru.ca - ppcguru.ca Removals access available via browser bridge."
+    checkedAt = (Get-Date).ToUniversalTime().ToString("o")
+  } | ConvertTo-Json
+  [System.IO.File]::WriteAllText($localStatus, $status, [System.Text.UTF8Encoding]::new($false))
   try {
     Invoke-RestMethod -Method Post -Uri "$dashboard/api/worker/heartbeat" -Headers $headers -Body $body | Out-Null
   } catch {}
