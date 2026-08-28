@@ -1,6 +1,6 @@
 # PPC Guru Spam Index Cleanup MVP
 
-This local dry-run tool turns suspected hacked URLs into an auditable review queue and safe prefix suggestions. It does not modify Search Console, WordPress, Cloudflare, or the website.
+This tool turns suspected hacked URLs into an auditable review queue, verifies live HTTP status, and submits explicitly approved exact/prefix requests through Google Search Console's Temporary Removals UI. Google does not expose Temporary Removals through the Search Console API, so the approved worker uses a dedicated local browser profile.
 
 ## Run the dashboard
 
@@ -48,6 +48,4 @@ npm run gsc:execute -- --limit=10
 
 The worker uses `data/gsc-browser-profile`, keeps an audit trail in `data/registry.json`, stops on the first Search Console UI failure, and saves a diagnostic screenshot. Always test one request after a long pause because Google can change the interface.
 
-## Next milestone
-
-After testing with PPC Guru's real list: add persistent review decisions, import the production sitemap, generate approved CDN/server 410 rules, then add a separately controlled Playwright worker for approved GSC requests.
+The hosted dashboard can hold the queue while `run-worker.ps1` performs authenticated GSC work on Windows. Shared hosting does not need Chrome; keep the worker token private.

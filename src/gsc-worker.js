@@ -53,9 +53,9 @@ async function run() {
   const dashboard = process.env.DASHBOARD_URL?.replace(/\/$/, "");
   const token = process.env.WORKER_TOKEN;
   const remote = Boolean(dashboard && token);
-  const headers = remote ? { authorization: `Bearer ${token}`, "content-type": "application/json" } : {};
+  const headers = remote ? { "x-worker-token": token, "content-type": "application/json" } : {};
   const queue = remote
-    ? (await (await fetch(`${dashboard}/api/worker/next`, { headers })).json()).requests.slice(0, limit)
+    ? await loadRemoteQueue(dashboard, headers, limit)
     : store.read().requests.filter((r) => r.approved && !["submitted", "processing"].includes(r.status)).slice(0, limit);
   const update = async (id, patch) => remote
     ? fetch(`${dashboard}/api/worker/requests/${id}/status`, { method: "POST", headers, body: JSON.stringify(patch) })
@@ -81,6 +81,13 @@ async function run() {
     }
   }
   await context.close();
+}
+
+async function loadRemoteQueue(dashboard, headers, limit) {
+  const response = await fetch(`${dashboard}/api/worker/next`, { headers });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(`Remote queue failed (${response.status}): ${payload.error || "unknown error"}`);
+  return (payload.requests || []).slice(0, limit);
 }
 
 if (command === "login") await login();

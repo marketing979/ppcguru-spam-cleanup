@@ -15,7 +15,7 @@ let connectionProcess = null;
 const workerToken = process.env.WORKER_TOKEN || "";
 
 function workerAuthorized(req) {
-  return Boolean(workerToken) && req.headers.authorization === `Bearer ${workerToken}`;
+  return Boolean(workerToken) && (req.headers.authorization === `Bearer ${workerToken}` || req.headers["x-worker-token"] === workerToken);
 }
 
 function send(res, status, body, type = "application/json; charset=utf-8") {
@@ -34,6 +34,7 @@ async function body(req) {
 
 const server = http.createServer(async (req, res) => {
   try {
+    if (req.method === "GET" && req.url === "/api/health") return send(res, 200, JSON.stringify({ ok: true, service: "ppcguru-spam-cleanup" }));
     if (req.method === "POST" && req.url === "/api/analyze") {
       const input = await body(req);
       const report = await analyze(input.urls || "", config, {
