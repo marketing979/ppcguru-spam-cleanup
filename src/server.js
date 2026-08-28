@@ -79,4 +79,5 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, "127.0.0.1", () => console.log(`PPC Guru Spam Cleanup running at http://127.0.0.1:${port}`));
+const host = process.env.HOST || "0.0.0.0";
+server.listen(port, host, () => console.log(`PPC Guru Spam Cleanup listening on ${host}:${port}`));
