@@ -6,7 +6,17 @@ import { launchGscBrowser } from "./browser.js";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const statusFile = path.join(root, "data", "gsc-connection.json");
 const removalsUrl = "https://search.google.com/search-console/removals?resource_id=sc-domain%3Appcguru.ca";
-const save = (value) => fs.writeFileSync(statusFile, `${JSON.stringify({ ...value, checkedAt: new Date().toISOString() }, null, 2)}\n`);
+const dashboard = process.env.DASHBOARD_URL?.replace(/\/$/, "");
+const workerToken = process.env.WORKER_TOKEN;
+const save = (value) => {
+  const status = { ...value, checkedAt: new Date().toISOString() };
+  fs.writeFileSync(statusFile, `${JSON.stringify(status, null, 2)}\n`);
+  if (dashboard && workerToken) fetch(`${dashboard}/api/worker/heartbeat`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-worker-token": workerToken },
+    body: JSON.stringify(status)
+  }).catch(() => {});
+};
 
 let context;
 try {

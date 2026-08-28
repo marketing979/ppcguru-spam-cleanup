@@ -58,7 +58,11 @@ loadRegistry();
 
 $("connect-gsc").addEventListener("click", async () => {
   $("connect-gsc").disabled = true;
-  await fetch("/api/gsc/connect", { method: "POST" });
+  const response = await fetch("/api/gsc/connect", { method: "POST" });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    $("gsc-message").textContent = result.error || "Could not start the GSC worker.";
+  }
   await refreshGsc();
 });
 async function refreshGsc() {

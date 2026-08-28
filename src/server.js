@@ -13,6 +13,8 @@ const port = Number(process.env.PORT || 4310);
 const store = createStore(root);
 let connectionProcess = null;
 const workerToken = process.env.WORKER_TOKEN || "";
+const hostedMode = process.env.HOSTED_MODE === "1";
+const workerStatusFile = path.join(root, "data", "worker-status.json");
 
 function workerAuthorized(req) {
   return Boolean(workerToken) && (req.headers.authorization === `Bearer ${workerToken}` || req.headers["x-worker-token"] === workerToken);
@@ -54,6 +56,17 @@ const server = http.createServer(async (req, res) => {
       const requests = store.read().requests.filter((r) => r.approved && !["submitted", "processing"].includes(r.status));
       return send(res, 200, JSON.stringify({ requests }));
     }
+    if (req.method === "POST" && req.url === "/api/worker/heartbeat") {
+      const input = await body(req);
+      const status = {
+        status: input.status || "connecting",
+        message: input.message || "Windows GSC worker is online.",
+        checkedAt: new Date().toISOString()
+      };
+      fs.mkdirSync(path.dirname(workerStatusFile), { recursive: true });
+      fs.writeFileSync(workerStatusFile, `${JSON.stringify(status, null, 2)}\n`);
+      return send(res, 200, JSON.stringify(status));
+    }
     if (req.method === "POST" && /^\/api\/worker\/requests\/[^/]+\/status$/.test(req.url)) {
       const id = req.url.split("/")[4];
       const input = await body(req);
@@ -62,11 +75,20 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, JSON.stringify(store.update(id, { status: input.status, error: input.error || "", submittedAt: input.status === "submitted" ? new Date().toISOString() : undefined })));
     }
     if (req.method === "GET" && req.url === "/api/gsc/status") {
+      if (hostedMode) {
+        const status = fs.existsSync(workerStatusFile)
+          ? JSON.parse(fs.readFileSync(workerStatusFile, "utf8"))
+          : { status: "not-connected", message: "Start connect-gsc.ps1 on the Windows worker." };
+        const age = status.checkedAt ? Date.now() - Date.parse(status.checkedAt) : Infinity;
+        if (age > 120_000) return send(res, 200, JSON.stringify({ status: "not-connected", message: "Windows GSC worker is offline. Start connect-gsc.ps1." }));
+        return send(res, 200, JSON.stringify(status));
+      }
       const file = path.join(root, "data", "gsc-connection.json");
       const status = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { status: "not-connected", message: "Connect the dedicated Google account." };
       return send(res, 200, JSON.stringify(status));
     }
     if (req.method === "POST" && req.url === "/api/gsc/connect") {
+      if (hostedMode) return send(res, 409, JSON.stringify({ error: "GSC runs on the Windows worker. Start connect-gsc.ps1 on that computer." }));
       if (!connectionProcess || connectionProcess.exitCode !== null) {
         connectionProcess = spawn(process.execPath, [path.join(root, "src", "gsc-connect.js")], { cwd: root, detached: true, stdio: "ignore", windowsHide: true });
         connectionProcess.unref();
